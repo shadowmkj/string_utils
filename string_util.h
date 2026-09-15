@@ -3,6 +3,7 @@
 
 #define DEFAULT_BUFFER_SIZE 256
 
+#include <ctype.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -23,6 +24,14 @@ void sv_append_view(String_View *view, const String_View *other);
 bool sv_ends_with(const String_View *view, const char *pattern);
 void sv_reset(String_View *view);
 void sv_free(String_View *view);
+
+bool sv_contains(const String_View *view, const char *pattern);
+bool sv_equals(const String_View *view, const String_View *other);
+bool sv_equals_cstr(const String_View *view, const char *other);
+void sv_trim(String_View *view);
+String_View sv_clone(const String_View *view);
+char *sv_detach(String_View *view);
+char sv_char_at(const String_View *view, size_t index);
 
 #endif // !STRING_BUILDER_H
 
@@ -186,6 +195,113 @@ void sv_free(String_View *view) {
     }
     view->size = 0;
     view->capacity = 0;
+}
+
+bool sv_contains(const String_View *view, const char *pattern) {
+    if (!view || !pattern || !view->string) {
+        return false;
+    }
+    if (pattern[0] == '\0') {
+        return true;
+    }
+    return strstr(view->string, pattern) != NULL;
+}
+
+bool sv_equals(const String_View *view, const String_View *other) {
+    if (!view || !other) {
+        return false;
+    }
+    if (view == other) {
+        return true;
+    }
+    if (view->size != other->size) {
+        return false;
+    }
+    if (view->size == 0) {
+        return true;
+    }
+    if (!view->string || !other->string) {
+        return false;
+    }
+    return memcmp(view->string, other->string, view->size) == 0;
+}
+
+bool sv_equals_cstr(const String_View *view, const char *other) {
+    if (!view || !other || !view->string) {
+        return false;
+    }
+    size_t other_len = strlen(other);
+    if (view->size != other_len) {
+        return false;
+    }
+    return memcmp(view->string, other, view->size) == 0;
+}
+
+void sv_trim(String_View *view) {
+    if (!view || !view->string || view->size == 0) {
+        return;
+    }
+
+    size_t start = 0;
+    while (start < view->size && isspace((unsigned char)view->string[start])) {
+        start++;
+    }
+
+    if (start == view->size) {
+        view->string[0] = '\0';
+        view->size = 0;
+        return;
+    }
+
+    size_t end = view->size - 1;
+    while (end > start && isspace((unsigned char)view->string[end])) {
+        end--;
+    }
+
+    size_t new_size = end - start + 1;
+    if (start > 0) {
+        memmove(view->string, view->string + start, new_size);
+    }
+    view->string[new_size] = '\0';
+    view->size = new_size;
+}
+
+String_View sv_clone(const String_View *view) {
+    if (!view || !view->string) {
+        return (String_View){.string = NULL, .size = 0, .capacity = 0};
+    }
+
+    char *buffer = malloc(view->capacity);
+    if (!buffer) {
+        perror("ERROR: Failed to allocate memory in sv_clone\n");
+        return (String_View){.string = NULL, .size = 0, .capacity = 0};
+    }
+
+    memcpy(buffer, view->string, view->size + 1);
+    return (String_View){
+        .string = buffer,
+        .size = view->size,
+        .capacity = view->capacity,
+    };
+}
+
+char *sv_detach(String_View *view) {
+    if (!view || !view->string) {
+        return NULL;
+    }
+
+    char *detached = view->string;
+    view->string = NULL;
+    view->size = 0;
+    view->capacity = 0;
+    return detached;
+}
+
+char sv_char_at(const String_View *view, size_t index) {
+    if (!view || !view->string || index >= view->size) {
+        return '\0';
+    }
+    return view->string[index];
 }
 
 #endif // !STRING_BUILDER_IMPLEMENTATION
