@@ -19,10 +19,10 @@ const char *sv_to_cstr(const String_View *view);
 bool sv_starts_with(const String_View *view, const char *pattern);
 void sv_append_cstr(String_View *view, const char *cstring);
 void sv_append_char(String_View *view, char c);
-void sv_append_view(String_View *view, const String_View *other); // TODO:
+void sv_append_view(String_View *view, const String_View *other);
 bool sv_ends_with(const String_View *view, const char *pattern);
-void sv_reset(String_View *view); // TODO:
-void sv_free(String_View *view);  // TODO:
+void sv_reset(String_View *view);
+void sv_free(String_View *view);
 
 #endif // !STRING_BUILDER_H
 
@@ -139,8 +139,53 @@ void sv_append_char(String_View *view, char c) {
 }
 
 void sv_append_view(String_View *view, const String_View *other) {
-    if (!view || !other)
+    if (!view || !other || !other->string || other->size == 0) {
         return;
+    }
+
+    size_t required_capacity = view->size + other->size + 1;
+    if (required_capacity > view->capacity) {
+        size_t new_capacity =
+            (view->capacity == 0) ? DEFAULT_BUFFER_SIZE : view->capacity * 2;
+        while (new_capacity < required_capacity) {
+            new_capacity *= 2;
+        }
+
+        char *new_buffer = (char *)realloc(view->string, new_capacity);
+        if (!new_buffer) {
+            perror("ERROR: Failed to allocate memory in sv_append_view\n");
+            return;
+        }
+
+        view->string = new_buffer;
+        view->capacity = new_capacity;
+    }
+
+    memcpy(view->string + view->size, other->string, other->size);
+    view->size += other->size;
+    view->string[view->size] = '\0';
+}
+
+void sv_reset(String_View *view) {
+    if (!view) {
+        return;
+    }
+    view->size = 0;
+    if (view->string && view->capacity > 0) {
+        view->string[0] = '\0';
+    }
+}
+
+void sv_free(String_View *view) {
+    if (!view) {
+        return;
+    }
+    if (view->string) {
+        free(view->string);
+        view->string = NULL;
+    }
+    view->size = 0;
+    view->capacity = 0;
 }
 
 #endif // !STRING_BUILDER_IMPLEMENTATION
