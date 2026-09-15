@@ -23,6 +23,27 @@ void to_str() {
     printf("STATUS: PASS\n");
 }
 
+void append_char() {
+    printf("TEST: append_char\t");
+    char *pattern = "Hell";
+    String_View view = sv_from_cstr(pattern);
+    char c = 'o';
+    sv_append_char(&view, c);
+    assert(!strcmp("Hello", view.string));
+    printf("STATUS: PASS\n");
+}
+
+void append_view() {
+    printf("TEST: append_view\t");
+    char *pattern = "Hello";
+    String_View view = sv_from_cstr(pattern);
+    char *other = " World";
+    String_View other_view = sv_from_cstr(other);
+    sv_append_view(&view, &other_view);
+    assert(!strcmp("Hello World", view.string));
+    printf("STATUS: PASS\n");
+}
+
 void append_cstr() {
     printf("TEST: append_cstr\t");
     char *pattern = "Hello";
@@ -38,7 +59,16 @@ void starts_with() {
     char *pattern = "hello";
     String_View view = sv_from_cstr("hello world");
     assert(sv_starts_with(&view, pattern));
-    assert(!sv_starts_with(&view, "Milan"));
+    assert(!sv_starts_with(&view, "Something Else"));
+    printf("STATUS: PASS\n");
+}
+
+void ends_with() {
+    printf("TEST: ends_with\t");
+    char *pattern = "world";
+    String_View view = sv_from_cstr("hello world");
+    assert(sv_ends_with(&view, pattern));
+    assert(!sv_ends_with(&view, "Something Else"));
     printf("STATUS: PASS\n");
 }
 
@@ -49,6 +79,9 @@ int main(void) {
     from_str();
     to_str();
     starts_with();
+    ends_with();
     append_cstr();
+    append_char();
+    append_view();
     return 0;
 }

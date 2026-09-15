@@ -16,13 +16,13 @@ typedef struct {
 
 String_View sv_from_cstr(const char *cstring);
 const char *sv_to_cstr(const String_View *view);
-bool sv_starts_with(String_View *view, const char *pattern);
+bool sv_starts_with(const String_View *view, const char *pattern);
 void sv_append_cstr(String_View *view, const char *cstring);
 void sv_append_char(String_View *view, char c);
 void sv_append_view(String_View *view, const String_View *other); // TODO:
-bool sv_ends_with(String_View *view, const char *pattern);        // TODO:
-void sv_reset(String_View *view);                                 // TODO:
-void sv_free(String_View *view);                                  // TODO:
+bool sv_ends_with(const String_View *view, const char *pattern);
+void sv_reset(String_View *view); // TODO:
+void sv_free(String_View *view);  // TODO:
 
 #endif // !STRING_BUILDER_H
 
@@ -48,7 +48,7 @@ String_View sv_from_cstr(const char *cstring) {
     };
 }
 
-bool sv_starts_with(String_View *view, const char *pattern) {
+bool sv_starts_with(const String_View *view, const char *pattern) {
     size_t size_of_pattern = strlen(pattern);
     if (size_of_pattern > view->size)
         return false;
@@ -97,6 +97,50 @@ const char *sv_to_cstr(const String_View *view) {
     if (!view || !view->string)
         return NULL;
     return view->string;
+}
+
+bool sv_ends_with(const String_View *view, const char *pattern) {
+    if (!view || !pattern || !view->string)
+        return false;
+    size_t pattern_size = strlen(pattern);
+    if (pattern_size > view->size)
+        return false;
+
+    return memcmp(view->string + (view->size - pattern_size), pattern,
+                  pattern_size) == 0;
+}
+
+void sv_append_char(String_View *view, char c) {
+    if (!view || !c) {
+        return;
+    }
+
+    size_t required_capacity = view->size + 2;
+    if (required_capacity > view->capacity) {
+        size_t new_capacity =
+            (view->capacity == 0) ? DEFAULT_BUFFER_SIZE : view->capacity * 2;
+        while (new_capacity < required_capacity) {
+            new_capacity *= 2;
+        }
+
+        char *new_buffer = (char *)realloc(view->string, new_capacity);
+        if (!new_buffer) {
+            perror("ERROR: Failed to allocate memory in sv_append_char\n");
+            return;
+        }
+
+        view->string = new_buffer;
+        view->capacity = new_capacity;
+    }
+
+    memcpy(view->string + view->size, &c, 1);
+    view->size += 1;
+    view->string[view->size] = '\0';
+}
+
+void sv_append_view(String_View *view, const String_View *other) {
+    if (!view || !other)
+        return;
 }
 
 #endif // !STRING_BUILDER_IMPLEMENTATION
